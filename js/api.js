@@ -1,26 +1,18 @@
-// API Configuration - Dễ dàng thay đổi API URL tại đây
-const API_CONFIG = {
-  baseURL: "https://69388b0a4618a71d77d09d79.mockapi.io/", // Thay đổi URL API tại đây
-  endpoints: {
-    users: "/users",
-    tours: "/tours",
-  },
-  // Có thể thêm headers, authentication, timeout, etc.
-  headers: {
-    "Content-Type": "application/json",
-  },
-};
+// ============================================
+// GENERIC API SERVICE
+// ============================================
+// API Service tổng quát có thể làm việc với bất kỳ entity nào
+// Sử dụng AppConfig để xác định endpoint và cấu trúc dữ liệu
 
-// API Service - Tất cả API calls được quản lý tại đây
 const ApiService = {
   // Generic request handler
   async request(endpoint, options = {}) {
     try {
-      const url = `${API_CONFIG.baseURL}${endpoint}`;
+      const url = `${AppConfig.api.baseURL}${endpoint}`;
       const config = {
         ...options,
         headers: {
-          ...API_CONFIG.headers,
+          ...AppConfig.api.headers,
           ...options.headers,
         },
       };
@@ -38,14 +30,16 @@ const ApiService = {
     }
   },
 
-  // Users API
+  // ============================================
+  // USER API (Fixed - không thay đổi)
+  // ============================================
   users: {
     getAll: async () => {
-      return await ApiService.request(API_CONFIG.endpoints.users);
+      return await ApiService.request(AppConfig.api.usersEndpoint);
     },
 
     getById: async (id) => {
-      return await ApiService.request(`${API_CONFIG.endpoints.users}/${id}`);
+      return await ApiService.request(`${AppConfig.api.usersEndpoint}/${id}`);
     },
 
     getByEmail: async (email) => {
@@ -55,94 +49,107 @@ const ApiService = {
     },
 
     create: async (userData) => {
-      return await ApiService.request(API_CONFIG.endpoints.users, {
+      return await ApiService.request(AppConfig.api.usersEndpoint, {
         method: "POST",
         body: JSON.stringify(userData),
       });
     },
 
     update: async (id, userData) => {
-      return await ApiService.request(`${API_CONFIG.endpoints.users}/${id}`, {
+      return await ApiService.request(`${AppConfig.api.usersEndpoint}/${id}`, {
         method: "PUT",
         body: JSON.stringify(userData),
       });
     },
 
     delete: async (id) => {
-      return await ApiService.request(`${API_CONFIG.endpoints.users}/${id}`, {
+      return await ApiService.request(`${AppConfig.api.usersEndpoint}/${id}`, {
         method: "DELETE",
       });
     },
   },
 
-  // Tours API
-  tours: {
+  // ============================================
+  // ENTITY API (Generic - tự động thay đổi theo config)
+  // ============================================
+  entity: {
     getAll: async () => {
-      return await ApiService.request(API_CONFIG.endpoints.tours);
+      return await ApiService.request(AppConfig.api.entityEndpoint);
     },
 
     getById: async (id) => {
-      return await ApiService.request(`${API_CONFIG.endpoints.tours}/${id}`);
+      return await ApiService.request(`${AppConfig.api.entityEndpoint}/${id}`);
     },
 
-    create: async (tourData) => {
-      return await ApiService.request(API_CONFIG.endpoints.tours, {
+    create: async (data) => {
+      return await ApiService.request(AppConfig.api.entityEndpoint, {
         method: "POST",
-        body: JSON.stringify(tourData),
+        body: JSON.stringify(data),
       });
     },
 
-    update: async (id, tourData) => {
-      return await ApiService.request(`${API_CONFIG.endpoints.tours}/${id}`, {
+    update: async (id, data) => {
+      return await ApiService.request(`${AppConfig.api.entityEndpoint}/${id}`, {
         method: "PUT",
-        body: JSON.stringify(tourData),
+        body: JSON.stringify(data),
       });
     },
 
     delete: async (id) => {
-      return await ApiService.request(`${API_CONFIG.endpoints.tours}/${id}`, {
+      return await ApiService.request(`${AppConfig.api.entityEndpoint}/${id}`, {
         method: "DELETE",
       });
     },
 
+    // Generic search - tìm kiếm trên tất cả các field có displayInCard = true
     search: async (query) => {
-      const tours = await ApiService.tours.getAll();
-      return tours.filter(
-        (tour) =>
-          tour.title.toLowerCase().includes(query.toLowerCase()) ||
-          tour.destination.toLowerCase().includes(query.toLowerCase()) ||
-          tour.description.toLowerCase().includes(query.toLowerCase())
+      const items = await ApiService.entity.getAll();
+      const searchableFields = AppConfig.getDisplayFields();
+
+      return items.filter((item) => {
+        return searchableFields.some((field) => {
+          const value = item[field.key];
+          if (!value) return false;
+          return value.toString().toLowerCase().includes(query.toLowerCase());
+        });
+      });
+    },
+
+    // Generic filter by field
+    filterBy: async (fieldKey, value) => {
+      const items = await ApiService.entity.getAll();
+      return items.filter(
+        (item) =>
+          item[fieldKey] &&
+          item[fieldKey].toString().toLowerCase() === value.toLowerCase()
       );
     },
 
-    filterByDestination: async (destination) => {
-      const tours = await ApiService.tours.getAll();
-      return tours.filter(
-        (tour) => tour.destination.toLowerCase() === destination.toLowerCase()
-      );
-    },
+    // Filter by range (cho number fields)
+    filterByRange: async (fieldKey, rangeValue) => {
+      const items = await ApiService.entity.getAll();
 
-    filterByDuration: async (durationRange) => {
-      const tours = await ApiService.tours.getAll();
-
-      if (durationRange === "1-3") {
-        return tours.filter((tour) => tour.duration >= 1 && tour.duration <= 3);
-      } else if (durationRange === "4-7") {
-        return tours.filter((tour) => tour.duration >= 4 && tour.duration <= 7);
-      } else if (durationRange === "8+") {
-        return tours.filter((tour) => tour.duration >= 8);
+      // Parse range (ví dụ: "1-3", "4-7", "8+")
+      if (rangeValue.includes("-")) {
+        const [min, max] = rangeValue.split("-").map(Number);
+        return items.filter(
+          (item) => item[fieldKey] >= min && item[fieldKey] <= max
+        );
+      } else if (rangeValue.includes("+")) {
+        const min = parseInt(rangeValue);
+        return items.filter((item) => item[fieldKey] >= min);
       }
 
-      return tours;
+      return items;
     },
   },
 };
 
+// ============================================
+// BACKWARD COMPATIBILITY
+// ============================================
+// Để code cũ vẫn hoạt động, tạo alias "tours" trỏ đến "entity"
+ApiService.tours = ApiService.entity;
 
-// Export API - THAY ĐỔI TẠI ĐÂY ĐỂ CHUYỂN GIỮA MOCK VÀ REAL API
-// Để sử dụng Real API: const API = ApiService;
-// Để sử dụng Mock API: const API = MockApiService;
-const API = ApiService; // Sử dụng Mock API
-
-// Nếu muốn dùng Real API, uncomment dòng dưới và comment dòng trên
-// const API = ApiService;
+// Export API
+const API = ApiService;

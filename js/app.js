@@ -3,11 +3,14 @@ $(document).ready(function () {
   // Initialize i18n first
   i18n.init();
 
+  // Initialize UI Renderer (creates dynamic form and filters)
+  UIRenderer.init();
+
   // Initialize Auth Manager
   AuthManager.init();
 
-  // Initialize Tour Manager
-  TourManager.init();
+  // Initialize Entity Manager (formerly TourManager)
+  EntityManager.init();
 
   // Initialize Favorites Manager
   FavoritesManager.init();
@@ -18,7 +21,7 @@ $(document).ready(function () {
   // Initialize Performance Monitor
   PerformanceMonitor.init();
 
-  console.log("Travel Booking App initialized successfully!");
+  console.log(`${AppConfig.entity.namePlural} App initialized successfully!`);
 });
 
 // Theme Manager - Dark Mode Support

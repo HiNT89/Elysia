@@ -29,9 +29,14 @@ const AuthManager = {
       this.handleRegister();
     });
 
-    // Logout button (updated selector)
+    // Logout button - show modal
     $("#logoutButton").on("click", (e) => {
       e.preventDefault();
+      $("#logoutConfirmModal").modal("show");
+    });
+
+    // Confirm logout button in modal
+    $("#confirmLogoutBtn").on("click", () => {
       this.handleLogout();
     });
   },
@@ -130,10 +135,26 @@ const AuthManager = {
 
   // Handle logout
   handleLogout() {
+    // Hide the modal first
+    $("#logoutConfirmModal").modal("hide");
+
+    // Clear current user
     this.currentUser = null;
     localStorage.removeItem("currentUser");
-    this.showAuth();
-    this.showAlert("success", "Đăng xuất thành công");
+
+    // Clear search and filters
+    $("#searchTour").val("");
+    if (window.EntityManager) {
+      EntityManager.clearFilters();
+    }
+
+    // Show success message
+    this.showAlert("success", i18n.t("auth.logoutSuccess"));
+
+    // Fade out app section, then show auth
+    $("#appSection").fadeOut(300, () => {
+      this.showAuth();
+    });
   },
 
   // Show auth section
@@ -156,9 +177,9 @@ const AuthManager = {
     $("#logoutBtn").show();
     $("#userName").text(this.currentUser.name);
 
-    // Load tours
-    if (window.TourManager) {
-      TourManager.loadTours();
+    // Load items (generic)
+    if (typeof EntityManager !== "undefined" && EntityManager.loadItems) {
+      EntityManager.loadItems();
     }
   },
 

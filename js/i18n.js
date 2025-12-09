@@ -15,6 +15,8 @@ const translations = {
       registerSuccess: "Đăng ký thành công!",
       loginFailed: "Email hoặc mật khẩu không đúng!",
       emailExists: "Email đã tồn tại!",
+      logoutConfirm: "Bạn có chắc muốn đăng xuất?",
+      logoutSuccess: "Đăng xuất thành công!",
     },
     tour: {
       title: "Quản lý Tour Du lịch",
@@ -72,6 +74,8 @@ const translations = {
       registerSuccess: "Registration successful!",
       loginFailed: "Invalid email or password!",
       emailExists: "Email already exists!",
+      logoutConfirm: "Are you sure you want to logout?",
+      logoutSuccess: "Logout successful!",
     },
     tour: {
       title: "Tour Management",
